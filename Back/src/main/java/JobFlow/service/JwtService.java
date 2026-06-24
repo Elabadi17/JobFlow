@@ -1,6 +1,7 @@
 package JobFlow.service;
 
 import JobFlow.config.ApplicationProperties;
+import JobFlow.entity.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -22,18 +23,21 @@ public class JwtService {
     @Autowired
     private ApplicationProperties appProperties;
 
-    public String generateToken(String userName) {
-        Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, userName);
+    public String generateToken(User user) {
+        UserInfoDetails userDetails= UserInfoDetails.build(user);
+        return generateToken(new HashMap<>(), userDetails);
     }
 
-    private String createToken(Map<String, Object> claims, String userName) {
-        return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(userName)
+    private String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
+        return Jwts.builder().setClaims(extraClaims).setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + appProperties.getJwt().getExpirationMs()))
-                .signWith(getSignKey(), SignatureAlgorithm.HS256).compact();
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256).compact();
+    }
+
+    private Key getSigningKey() {
+        byte[] keyBytes = Decoders.BASE64.decode(appProperties.getJwt().getSecret());
+        return Keys.hmacShaKeyFor(keyBytes);
     }
 
     private Key getSignKey() {

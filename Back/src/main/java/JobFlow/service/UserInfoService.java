@@ -1,6 +1,6 @@
 package JobFlow.service;
 import JobFlow.repository.UserInfoRepository;
-import JobFlow.entity.UserInfo;
+import JobFlow.entity.User;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
@@ -24,15 +24,14 @@ public class UserInfoService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        User userDetail = repository.findByEmail((username))
+                .orElseThrow(() -> new UsernameNotFoundException(
+                "User Not Found with username: " + username));
 
-        Optional<UserInfo> userDetail = repository.findByEmail((username));
-
-        // Converting userDetail to UserDetails
-        return userDetail.map(UserInfoDetails::new)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found " + username));
+        return UserInfoDetails.build(userDetail);
     }
 
-    public String addUser(UserInfo userInfo) {
+    public String addUser(User userInfo) {
         userInfo.setPassword(encoder.encode(userInfo.getPassword()));
         repository.save(userInfo);
         return "User Added Successfully";

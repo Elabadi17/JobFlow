@@ -2,7 +2,8 @@ package JobFlow.init;
 
 
 import JobFlow.config.ApplicationProperties;
-import JobFlow.entity.UserInfo;
+import JobFlow.entity.User;
+import JobFlow.enums.Role;
 import JobFlow.repository.UserInfoRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -31,16 +32,16 @@ public class UserInitializer implements CommandLineRunner {
                 continue;
             }
 
-            UserInfo user = new UserInfo();
+            User user = new User();
 
-            user.setName(seedUser.getName());
+            user.setFirstName(seedUser.getName());
             user.setEmail(seedUser.getEmail());
 
             user.setPassword(
                     encoder.encode(seedUser.getPassword())
             );
 
-            user.setRoles(seedUser.getRole());
+            user.setRole(Role.valueOf(seedUser.getRole()));
 
             repository.save(user);
         }

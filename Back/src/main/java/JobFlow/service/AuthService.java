@@ -3,8 +3,10 @@ package JobFlow.service;
 import JobFlow.dtos.requests.AuthRequest;
 import JobFlow.dtos.requests.RegisterRequest;
 import JobFlow.dtos.responses.AuthResponse;
-import JobFlow.entity.UserInfo;
+import JobFlow.entity.User;
 
+import JobFlow.enums.Role;
+import JobFlow.mappers.UserMapper;
 import JobFlow.repository.UserInfoRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -30,7 +32,7 @@ public class AuthService {
 
     private final PasswordEncoder passwordEncoder;
 
-    private final UserInfoService userService;
+    private final UserMapper userMapper;
 
     private final UserInfoRepository repository;
 
@@ -39,7 +41,7 @@ public class AuthService {
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            request.getUsername(),
+                            request.getEmail(),
                             request.getPassword()
                     )
             );
@@ -51,23 +53,28 @@ public class AuthService {
         throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
     }
 
-        String token = jwtService.generateToken(request.getUsername());
+        var user = repository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password"));
 
-        return new AuthResponse(token);
+
+        var jwt = jwtService.generateToken(user);
+
+        return new AuthResponse(userMapper.entityToResponse(user), jwt);
     }
-    public void register(RegisterRequest request) {
+    public AuthResponse register(RegisterRequest request) {
 
-        UserInfo user = new UserInfo();
+        var user = new User(
+                request.getFirstname(),
+                request.getLastname(),
+                request.getEmail(),
+                passwordEncoder.encode(request.getPassword()),
+                request.isEnabled(),
+                request.getRole()
+        );
+        var jwt = jwtService.generateToken(user);
 
-        user.setName(request.getName());
-
-        user.setEmail(request.getEmail());
-
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-
-        user.setRoles("ROLE_USER");
-
-        userService.addUser(user);
+        repository.save(user);
+        return new AuthResponse(userMapper.entityToResponse(user), jwt);
     }
 
 }

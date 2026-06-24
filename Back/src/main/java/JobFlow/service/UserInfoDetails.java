@@ -1,27 +1,30 @@
 package JobFlow.service;
 
 
+import JobFlow.entity.User;
+import JobFlow.enums.Role;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import JobFlow.entity.UserInfo;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class UserInfoDetails implements UserDetails {
-
+    private UUID id;
     private String email;
     private String password;
-    private List<GrantedAuthority> authorities;
+    private boolean enabled;
+    private Collection<? extends GrantedAuthority> authorities;
 
-    public UserInfoDetails(UserInfo userInfo) {
+    public UserInfoDetails(User userInfo, Collection<? extends GrantedAuthority> authorities) {
+        id=userInfo.getId();
         email = userInfo.getEmail();
         password = userInfo.getPassword();
-        authorities = Arrays.stream(userInfo.getRoles().split(","))
-                .map(SimpleGrantedAuthority::new)
-                .collect(Collectors.toList());
+        enabled=userInfo.isEnabled();
+        this.authorities = authorities;
     }
 
     @Override
@@ -59,4 +62,14 @@ public class UserInfoDetails implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
+
+
+    public static UserInfoDetails build(User user) {
+        List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(user.getRole().name()));
+
+        return new UserInfoDetails(
+                user,
+                authorities);
+    }
+
 }
