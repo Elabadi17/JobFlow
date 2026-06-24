@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -27,6 +28,9 @@ public class User extends BaseEntity {
     private boolean enabled = true;
     @Enumerated
     private Role role;
+
+    @OneToMany(mappedBy = "user")
+    private List<JobApplication> applications;
 
 
 

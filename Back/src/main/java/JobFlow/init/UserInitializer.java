@@ -24,7 +24,7 @@ public class UserInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-
+/*
         for (ApplicationProperties.InitialUser seedUser :
                 properties.getUsers().getSeed()) {
 
@@ -44,6 +44,6 @@ public class UserInitializer implements CommandLineRunner {
             user.setRole(Role.valueOf(seedUser.getRole()));
 
             repository.save(user);
-        }
+        }*/
     }
 }

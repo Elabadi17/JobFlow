@@ -3,6 +3,7 @@ package JobFlow.service;
 import JobFlow.dtos.requests.AuthRequest;
 import JobFlow.dtos.requests.RegisterRequest;
 import JobFlow.dtos.responses.AuthResponse;
+import JobFlow.entity.JobApplication;
 import JobFlow.entity.User;
 
 import JobFlow.enums.Role;
@@ -21,6 +22,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.Collections;
 
 @Service
 @RequiredArgsConstructor
@@ -69,7 +72,8 @@ public class AuthService {
                 request.getEmail(),
                 passwordEncoder.encode(request.getPassword()),
                 request.isEnabled(),
-                request.getRole()
+                request.getRole(),
+                Collections.emptyList()
         );
         var jwt = jwtService.generateToken(user);
 

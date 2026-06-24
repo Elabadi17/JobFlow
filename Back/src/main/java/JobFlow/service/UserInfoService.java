@@ -10,7 +10,9 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @Primary
@@ -31,11 +33,27 @@ public class UserInfoService implements UserDetailsService {
         return UserInfoDetails.build(userDetail);
     }
 
-    public String addUser(User userInfo) {
-        userInfo.setPassword(encoder.encode(userInfo.getPassword()));
-        repository.save(userInfo);
-        return "User Added Successfully";
+
+    public List<User> getAll() {
+        return repository.findAll();
     }
 
+    public User getById(UUID id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    public User update(UUID id, User user) {
+        User existing = getById(id);
+
+        existing.setFirstName(user.getFirstName());
+        existing.setEmail(user.getEmail());
+
+        return repository.save(existing);
+    }
+
+    public void delete(UUID id) {
+        repository.deleteById(id);
+    }
 
 }
