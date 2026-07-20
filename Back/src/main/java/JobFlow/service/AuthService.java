@@ -19,6 +19,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -73,12 +74,28 @@ public class AuthService {
                 passwordEncoder.encode(request.getPassword()),
                 request.isEnabled(),
                 request.getRole(),
+                Collections.emptyList(),
                 Collections.emptyList()
+
         );
+        user.setEnabled(true);
+        user.setRole(Role.ROLE_USER);
         var jwt = jwtService.generateToken(user);
 
         repository.save(user);
         return new AuthResponse(userMapper.entityToResponse(user), jwt);
     }
 
+
+    public User getCurrentUser() {
+
+        String username = SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getName();
+
+        return repository.findByEmail(username)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found"));
+    }
 }

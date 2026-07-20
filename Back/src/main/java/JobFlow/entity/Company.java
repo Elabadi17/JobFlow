@@ -14,6 +14,7 @@ public class Company extends BaseEntity {
 
 
 
+    @Column(unique = true)
     private String name;
 
     private String website;

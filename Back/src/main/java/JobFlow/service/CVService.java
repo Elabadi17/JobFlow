@@ -3,6 +3,7 @@ package JobFlow.service;
 import JobFlow.dtos.requests.CVFileRequest;
 import JobFlow.dtos.responses.CVFileResponse;
 import JobFlow.entity.CVFile;
+import JobFlow.entity.User;
 import JobFlow.mappers.CVFileMapper;
 import JobFlow.repository.CVFileRepository;
 
@@ -24,11 +25,15 @@ public class CVService {
     private final CVFileRepository repository;
     private final CVFileMapper mapper;
     private final StorageFactory storageFactory;
+    private final AuthService authenticationService;
+
 
     public CVFileResponse create(
             MultipartFile file,
             CVFileRequest request
     ) {
+
+        User user = authenticationService.getCurrentUser();
 
         UploadResult upload =
                 storageFactory
@@ -69,6 +74,8 @@ public class CVService {
                 request.getNote()
         );
 
+        cv.setUser(user);
+
         return mapper.toResponse(
                 repository.save(cv)
         );
@@ -76,7 +83,9 @@ public class CVService {
     }
     public List<CVFileResponse> getAll() {
 
-        return repository.findAll()
+        User currentUser = authenticationService.getCurrentUser();
+
+        return repository.findByUser(currentUser)
                 .stream()
                 .map(mapper::toResponse)
                 .toList();
@@ -84,7 +93,12 @@ public class CVService {
 
     public CVFileResponse getById(UUID id) {
 
-        return repository.findById(id)
+        User currentUser = authenticationService.getCurrentUser();
+
+        return repository.findByIdAndUser(
+                        id,
+                        currentUser
+                )
                 .map(mapper::toResponse)
                 .orElseThrow(() ->
                         new RuntimeException("CV not found"));
@@ -92,8 +106,13 @@ public class CVService {
 
     public void delete(UUID id) {
 
+        User currentUser = authenticationService.getCurrentUser();
+
         CVFile cv =
-                repository.findById(id)
+                repository.findByIdAndUser(
+                                id,
+                                currentUser
+                        )
                         .orElseThrow(() ->
                                 new RuntimeException("CV not found"));
 
@@ -103,5 +122,6 @@ public class CVService {
 
         repository.delete(cv);
     }
+
 
 }

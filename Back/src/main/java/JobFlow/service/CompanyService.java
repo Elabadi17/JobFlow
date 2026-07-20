@@ -26,6 +26,12 @@ public class CompanyService {
     private final CompanyMapper mapper;
 
     public CompanyResponse create(CompanyRequest request) {
+        System.out.println(request);
+        if(repository.existsByNameIgnoreCase(request.getName())){
+            throw new RuntimeException(
+                    "Company already exists"
+            );
+        }
 
         Company company = mapper.toEntity(request);
 
@@ -56,6 +62,19 @@ public class CompanyService {
     }
 
     public CompanyResponse update(UUID id, CompanyRequest request) {
+
+        Company existing =
+                repository.findByNameIgnoreCase(
+                        request.getName()
+                );
+
+        if(existing != null &&
+                !existing.getId().equals(id)){
+
+            throw new RuntimeException(
+                    "Company already exists"
+            );
+        }
 
         Company company = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Company not found"));

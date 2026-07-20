@@ -15,12 +15,10 @@ public class RegisterRequest {
     @Size(max = 50)
     @Email
     private String email;
-    @NotBlank
-    @Size(max = 50)
-    @Email
-    private String password;
-    private boolean enabled = true;
-    private Role role=Role.ROLE_USER;
+    @NotBlank(message = "Password is required")
+    @Size(min = 6, max = 100, message = "Password must be between 6 and 100 characters")    private String password;
+    private boolean enabled ;
+    private Role role;
 
 
 }

@@ -28,14 +28,12 @@ public class JobApplicationService {
     private final CVFileRepository cvRepository;
     private final UserInfoRepository userRepository;
     private final JobApplicationMapper mapper;
-
+    private final AuthService authenticationService;
     public JobApplicationResponse create(
-            UUID userId,
             JobApplicationRequest request
     ) {
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        System.out.println(request);
+        User user = authenticationService.getCurrentUser();
 
         Company company = companyRepository.findById(request.getCompanyId())
                 .orElseThrow(() -> new RuntimeException("Company not found"));
@@ -49,7 +47,12 @@ public class JobApplicationService {
         app.setNotes(request.getNotes());
         app.setSalaryMin(request.getSalaryMin());
         app.setSalaryMax(request.getSalaryMax());
-
+        if(request.getStatus()==null){
+            app.setStatus(ApplicationStatus.APPLIED);
+        }
+        else{
+            app.setStatus(request.getStatus());
+        }
         app.setUser(user);
         app.setCompany(company);
         app.setCvFile(cv);
@@ -61,7 +64,10 @@ public class JobApplicationService {
 
         Pageable pageable = PageRequest.of(page, size);
 
-        Page<JobApplication> result = repository.findAll(pageable);
+        User currentUser = authenticationService.getCurrentUser();
+
+        Page<JobApplication> result =
+                repository.findByUser(currentUser, pageable);
 
         List<JobApplicationResponse> content = result.getContent()
                 .stream()

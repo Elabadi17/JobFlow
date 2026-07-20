@@ -1,6 +1,7 @@
 package JobFlow.repository;
 
 import JobFlow.entity.JobApplication;
+import JobFlow.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,4 +12,9 @@ import java.util.UUID;
 public interface JobApplicationRepository extends JpaRepository<JobApplication, UUID> {
 
     Page<JobApplication> findByUserId(UUID userId, Pageable pageable);
+
+    Page<JobApplication> findByUser(
+            User user,
+            Pageable pageable
+    );
 }

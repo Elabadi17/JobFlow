@@ -1,0 +1,65 @@
+.cv-page {
+display: flex;
+flex-direction: column;
+gap: 20px;
+}
+
+.upload-box {
+background: white;
+padding: 20px;
+border-radius: 12px;
+box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+display: flex;
+flex-direction: column;
+gap: 10px;
+}
+
+.upload-box input {
+padding: 10px;
+border: 1px solid #e2e8f0;
+border-radius: 8px;
+}
+
+.upload-btn {
+background: #0f172a;
+color: white;
+padding: 10px;
+border-radius: 8px;
+cursor: pointer;
+}
+
+.cv-grid {
+display: grid;
+grid-template-columns: repeat(3, 1fr);
+gap: 15px;
+}
+
+.cv-card {
+background: white;
+padding: 15px;
+border-radius: 12px;
+box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+display: flex;
+flex-direction: column;
+gap: 8px;
+}
+
+.cv-card a {
+color: #3b82f6;
+text-decoration: none;
+font-size: 14px;
+}
+
+.cv-actions {
+display: flex;
+gap: 8px;
+}
+
+.delete-btn {
+background: #ef4444;
+color: white;
+border: none;
+padding: 6px 10px;
+border-radius: 6px;
+cursor: pointer;
+}

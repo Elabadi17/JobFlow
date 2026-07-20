@@ -4,7 +4,9 @@ import JobFlow.dtos.requests.CVFileRequest;
 import JobFlow.dtos.responses.CVFileResponse;
 import JobFlow.entity.CVFile;
 import JobFlow.service.CVService;
+import JobFlow.service.UserInfoDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,7 +19,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/cv")
+@RequestMapping("/api/cv")
 @RequiredArgsConstructor
 public class CVController {
 
@@ -27,6 +29,7 @@ public class CVController {
             consumes = "multipart/form-data"
     )
     public CVFileResponse create(
+
             @RequestPart("file")
             MultipartFile file,
 
@@ -58,5 +61,7 @@ public class CVController {
     ) {
         service.delete(id);
     }
+
+
 
 }

@@ -10,6 +10,8 @@ public class JobApplicationRequest {
 
     private String position;
 
+    private ApplicationStatus status;
+
     private String notes;
 
     private Integer salaryMin;
