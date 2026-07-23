@@ -1,0 +1,19 @@
+{
+  "title": "JobFlow",
+  "description": "",
+  "language": "fr",
+  "robots": {
+    "index": true
+  },
+  "icons": {
+    "icon": ""
+  },
+  "openGraph": {
+    "image": ""
+  },
+  "analytics": {},
+  "customScripts": {},
+  "accessibility": {
+    "addBypassLinks": false
+  }
+}

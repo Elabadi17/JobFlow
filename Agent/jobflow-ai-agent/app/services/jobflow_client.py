@@ -1,19 +1,17 @@
-import os
 import httpx
 
+from app.config import SPRING_URL, JOBFLOW_EMAIL, JOBFLOW_PASSWORD
 
-from app.config import SPRING_URL,JOBFLOW_EMAIL,JOBFLOW_PASSWORD,DEFAULT_CV_ID
-
+import time
+import threading
 
 class JobFlowClient:
 
     def __init__(self):
-
         self.client = httpx.Client()
-
         self.token = None
-
         self.login()
+
 
     def login(self):
 
@@ -33,10 +31,14 @@ class JobFlowClient:
 
         self.client.headers.update(
             {
-                "Authorization":
-                f"Bearer {self.token}"
+                "Authorization": f"Bearer {self.token}"
             }
         )
+
+
+    # --------------------
+    # COMPANIES
+    # --------------------
 
     def find_company(self, name):
 
@@ -44,25 +46,24 @@ class JobFlowClient:
             f"{SPRING_URL}/api/companies"
         ).json()
 
-        for c in page["content"]:
 
-            if c["name"].lower() == name.lower():
+        for company in page["content"]:
 
-                return c
+            if company["name"].lower() == name.lower():
+                return company
+
 
         return None
-    
+
+
+
     def create_company(self, name):
 
         response = self.client.post(
             f"{SPRING_URL}/api/companies",
-
             json={
-
                 "name": name,
-
                 "website": None,
-
                 "location": None
             }
         )
@@ -70,7 +71,12 @@ class JobFlowClient:
         response.raise_for_status()
 
         return response.json()
-    
+
+
+
+    # --------------------
+    # APPLICATIONS
+    # --------------------
 
     def create_application(
             self,
@@ -79,69 +85,75 @@ class JobFlowClient:
     ):
 
         response = self.client.post(
-
             f"{SPRING_URL}/api/applications",
-
             json={
 
-                "position":
-                    extraction["position"],
+                "position": extraction["position"],
 
-                "status":
-                    extraction["status"],
+                "status": extraction["status"],
 
-                "notes":
-                    "Created automatically from email",
+                "notes": "Created automatically from email",
 
-                "companyId":
-                    company_id,
+                "companyId": company_id,
 
-                "salaryMin":
-                    None,
+                "salaryMin": None,
 
-                "salaryMax":
-                    None,
-
-                "cvId":
-                    DEFAULT_CV_ID
+                "salaryMax": None
             }
         )
 
         response.raise_for_status()
 
         return response.json()
-    
+
+
+
     def find_application(
             self,
             company_name,
             position
     ):
 
-        page = self.client.get(
+        response = self.client.get(
             f"{SPRING_URL}/api/applications/user"
-        ).json()
-        print(page)
+        )
+
+        response.raise_for_status()
+
+        page = response.json()
+
+
         for app in page["content"]:
 
+            company = app.get("company")
+
+
+            if not company:
+                continue
+
+
             same_company = (
-                app["companyName"].lower()
+                company["name"].lower()
                 ==
                 company_name.lower()
             )
 
+
             same_position = (
-                app["position"]
-                .lower()
+                app["position"].lower()
                 ==
                 position.lower()
             )
 
-            if same_company and same_position:
 
+            if same_company and same_position:
                 return app
 
+
         return None
-    
+
+
+
     def update_status(
             self,
             app_id,
@@ -149,9 +161,7 @@ class JobFlowClient:
     ):
 
         response = self.client.patch(
-
             f"{SPRING_URL}/api/applications/{app_id}/status",
-
             params={
                 "status": status
             }
@@ -160,3 +170,38 @@ class JobFlowClient:
         response.raise_for_status()
 
         return response.json()
+
+
+
+
+    def send_heartbeat(self):
+
+        while True:
+
+            try:
+
+                response = self.client.post(
+                    f"{SPRING_URL}/api/agent/heartbeat"
+                )
+
+                response.raise_for_status()
+
+                print("Agent heartbeat sent")
+
+            except Exception as e:
+
+                print(
+                    "Heartbeat failed:",
+                    e
+                )
+
+            time.sleep(10)
+
+    def start_heartbeat(self):
+
+        thread = threading.Thread(
+            target=self.send_heartbeat,
+            daemon=True
+        )
+
+        thread.start()

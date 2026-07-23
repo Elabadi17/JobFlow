@@ -9,6 +9,8 @@ import JobFlow.repository.CVFileRepository;
 
 import JobFlow.service.storage.StorageFactory;
 import JobFlow.service.storage.UploadResult;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
@@ -76,6 +78,8 @@ public class CVService {
 
         cv.setUser(user);
 
+        cv.setDefault(!repository.existsByUser(user));
+
         return mapper.toResponse(
                 repository.save(cv)
         );
@@ -116,12 +120,40 @@ public class CVService {
                         .orElseThrow(() ->
                                 new RuntimeException("CV not found"));
 
+
+        if(cv.isDefault()) {
+            throw new RuntimeException("Cannot delete default CV");
+        }
         storageFactory
                 .getStorage()
                 .delete(cv.getFileUrl());
 
         repository.delete(cv);
     }
+
+
+    @Transactional
+    public CVFileResponse setAsDefault(UUID id) {
+
+        User currentUser = authenticationService.getCurrentUser();
+
+        CVFile newDefault = repository.findByIdAndUser(id, currentUser)
+                .orElseThrow(() -> new RuntimeException("CV not found"));
+
+        repository.findByUserAndIsDefaultTrue(currentUser)
+                .ifPresent(cv -> cv.setDefault(false));
+
+        newDefault.setDefault(true);
+
+        return mapper.toResponse(newDefault);
+    }
+
+    public CVFile getDefaultCvId() {
+        User user = authenticationService.getCurrentUser();
+        return repository.findByUserAndIsDefaultTrue(user)
+                .orElseThrow(() -> new EntityNotFoundException("Default CV not found"));
+    }
+
 
 
 }

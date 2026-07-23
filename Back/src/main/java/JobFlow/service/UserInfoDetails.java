@@ -2,16 +2,14 @@ package JobFlow.service;
 
 
 import JobFlow.entity.User;
-import JobFlow.enums.Role;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import java.util.Arrays;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 public class UserInfoDetails implements UserDetails {
     @Getter
@@ -22,10 +20,10 @@ public class UserInfoDetails implements UserDetails {
     private Collection<? extends GrantedAuthority> authorities;
 
     public UserInfoDetails(User userInfo, Collection<? extends GrantedAuthority> authorities) {
-        id=userInfo.getId();
-        email = userInfo.getEmail();
-        password = userInfo.getPassword();
-        enabled=userInfo.isEnabled();
+        this.id = userInfo.getId();
+        this.email = userInfo.getEmail();
+        this.password = userInfo.getPassword();
+        this.enabled = userInfo.isEnabled();
         this.authorities = authorities;
     }
 
@@ -43,7 +41,6 @@ public class UserInfoDetails implements UserDetails {
     public String getUsername() {
         return email;
     }
-
 
     @Override
     public boolean isAccountNonExpired() {

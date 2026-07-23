@@ -1,13 +1,14 @@
 package JobFlow.dtos.responses;
 
+import JobFlow.entity.CVFile;
 import lombok.Data;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Data
-public class CVFileResponse {
+public class CVFileResponse extends BaseResponse {
 
-    private UUID id;
 
     private String hash;
 
@@ -18,5 +19,7 @@ public class CVFileResponse {
     private String label;
 
     private String note;
+
+    private boolean isDefault;
 
 }

@@ -1,14 +1,15 @@
 package JobFlow.dtos.responses;
 
+import JobFlow.entity.Company;
 import JobFlow.enums.ApplicationStatus;
 import lombok.Data;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Data
-public class JobApplicationResponse {
+public class JobApplicationResponse extends BaseResponse {
 
-    private UUID id;
 
     private String position;
 
@@ -20,7 +21,7 @@ public class JobApplicationResponse {
 
     private Integer salaryMax;
 
-    private String companyName;
+    private CompanyResponse company;
 
-    private String cvFileName;
+    private CVFileResponse cvFile;
 }

@@ -1,7 +1,10 @@
 package JobFlow.service;
+import JobFlow.dtos.requests.UpdateUserRequest;
+import JobFlow.dtos.responses.UserResponse;
 import JobFlow.repository.UserInfoRepository;
 import JobFlow.entity.User;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -13,16 +16,21 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
+import JobFlow.mappers.UserMapper;
 @Service
 @Primary
+@RequiredArgsConstructor
 public class UserInfoService implements UserDetailsService {
 
     @Autowired
     private UserInfoRepository repository;
 
     @Autowired
-    private PasswordEncoder encoder;
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private UserMapper userMapper;
+
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -43,13 +51,24 @@ public class UserInfoService implements UserDetailsService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
-    public User update(UUID id, User user) {
-        User existing = getById(id);
+    public UserResponse getMe(UUID id) {
+        User user =  repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return userMapper.entityToResponse(user);
+    }
 
-        existing.setFirstName(user.getFirstName());
-        existing.setEmail(user.getEmail());
+    public UserResponse update(UUID id, UpdateUserRequest request) {
+        User user = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return repository.save(existing);
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+        repository.save(user);
+
+        return userMapper.entityToResponse(user);
     }
 
     public void delete(UUID id) {

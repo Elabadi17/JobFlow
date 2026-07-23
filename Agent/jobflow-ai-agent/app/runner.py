@@ -4,9 +4,16 @@ from app.graph.workflow import graph
 
 from app.scheduler import *
 
+from app.services.jobflow_client import *
+
 reader = EmailService()
 
 emails = reader.get_unseen_emails()
+
+api = JobFlowClient()
+
+
+api.start_heartbeat()
 
 for mail in emails:
 

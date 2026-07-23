@@ -3,7 +3,7 @@ import schedule
 
 from app.services.email_service import EmailService
 from app.graph.workflow import graph
-
+from app.services.jobflow_client import *
 
 def check_mail():
 
@@ -42,8 +42,14 @@ schedule.every(10).seconds.do(check_mail)
 
 print("JobFlow AI Agent started.")
 
+
 while True:
 
     schedule.run_pending()
 
+    api = JobFlowClient()
+
+
+    api.send_heartbeat()
+    
     time.sleep(1)

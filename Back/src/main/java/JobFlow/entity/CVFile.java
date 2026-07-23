@@ -23,6 +23,10 @@ public class CVFile extends BaseEntity {
     @Column(length = 2000)
     private String note;
 
+
+    @Column(nullable = false)
+    private boolean isDefault = false;
+
     @ManyToOne
     private User user;
 

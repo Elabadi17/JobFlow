@@ -22,4 +22,8 @@ public interface CVFileRepository extends JpaRepository<CVFile, UUID> {
     );
 
 
+    Optional<CVFile> findByUserAndIsDefaultTrue(User user);
+
+    boolean existsByUser(User user);
+
 }

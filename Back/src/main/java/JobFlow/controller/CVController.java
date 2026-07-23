@@ -62,6 +62,16 @@ public class CVController {
         service.delete(id);
     }
 
+    @PatchMapping("/{id}/default")
+    public CVFileResponse setAsDefault(@PathVariable UUID id) {
+        return service.setAsDefault(id);
+    }
+
+    @GetMapping("/default")
+    public UUID getDefault() {
+        return service.getDefaultCvId().getId();
+    }
+
 
 
 }

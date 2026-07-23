@@ -29,6 +29,8 @@ public class JobApplicationService {
     private final UserInfoRepository userRepository;
     private final JobApplicationMapper mapper;
     private final AuthService authenticationService;
+    private final CVService cVService;
+
     public JobApplicationResponse create(
             JobApplicationRequest request
     ) {
@@ -37,6 +39,10 @@ public class JobApplicationService {
 
         Company company = companyRepository.findById(request.getCompanyId())
                 .orElseThrow(() -> new RuntimeException("Company not found"));
+
+        if(request.getCvId()==null){
+            request.setCvId(cVService.getDefaultCvId().getId());
+        }
 
         CVFile cv = cvRepository.findById(request.getCvId())
                 .orElseThrow(() -> new RuntimeException("CV not found"));

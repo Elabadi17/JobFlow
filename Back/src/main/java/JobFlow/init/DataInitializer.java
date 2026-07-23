@@ -62,11 +62,12 @@ public class DataInitializer implements CommandLineRunner {
         CVFile cv1 = new CVFile();
         cv1.setFileName("cv_admin.pdf");
         cv1.setFileUrl("http://files/cv_admin.pdf");
+        cv1.setUser(admin);
 
         CVFile cv2 = new CVFile();
         cv2.setFileName("cv_user.pdf");
         cv2.setFileUrl("http://files/cv_user.pdf");
-
+        cv2.setUser(user);
         cvRepository.saveAll(List.of(cv1, cv2));
 
         // ---------------- APPLICATIONS ----------------

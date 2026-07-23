@@ -28,11 +28,16 @@ public class JwtService {
         return generateToken(new HashMap<>(), userDetails);
     }
 
-    private String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
-        return Jwts.builder().setClaims(extraClaims).setSubject(userDetails.getUsername())
-                .setIssuedAt(new Date(System.currentTimeMillis()))
+    private String generateToken(Map<String, Object> extraClaims, UserInfoDetails userDetails) {
+
+        return Jwts.builder()
+                .setClaims(extraClaims)
+                .claim("userId", userDetails.getId())
+                .setSubject(userDetails.getUsername())
+                .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + appProperties.getJwt().getExpirationMs()))
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256).compact();
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .compact();
     }
 
     private Key getSigningKey() {
