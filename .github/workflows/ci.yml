@@ -95,7 +95,7 @@ jobs:
 
       - name: Install dependencies
 
-        working-directory: Front/JOBFLOW
+        working-directory: Front/JobFlow
 
         run: |
           npm ci
@@ -104,7 +104,7 @@ jobs:
 
       - name: Build React
 
-        working-directory: Front/JOBFLOW
+        working-directory: Front/JobFlow
 
         run: |
           npm run build
