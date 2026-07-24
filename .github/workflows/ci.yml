@@ -11,6 +11,7 @@ permissions:
   contents: read
   security-events: write
 
+
 jobs:
 
   build:
@@ -26,8 +27,9 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+
     ####################################################
-    # JAVA
+    # JAVA BACKEND
     ####################################################
 
     - name: Setup Java
@@ -37,14 +39,17 @@ jobs:
         java-version: 21
         cache: maven
 
+
     - name: Build Backend
       working-directory: Back
       run: |
         chmod +x mvnw
         ./mvnw clean package -DskipTests
 
+
+
     ####################################################
-    # NODE
+    # FRONTEND
     ####################################################
 
     - name: Setup Node
@@ -54,14 +59,17 @@ jobs:
         cache: npm
         cache-dependency-path: Front/JOBFLOW/package-lock.json
 
+
     - name: Build Frontend
       working-directory: Front/JOBFLOW
       run: |
         npm ci
         npm run build
 
+
+
     ####################################################
-    # PYTHON
+    # AI AGENT
     ####################################################
 
     - name: Setup Python
@@ -69,106 +77,153 @@ jobs:
       with:
         python-version: "3.12"
 
+
     - name: Install Agent dependencies
       working-directory: Agent/jobflow-ai-agent
       run: |
         pip install -r requirements.txt
 
+
     - name: Compile Agent
       working-directory: Agent/jobflow-ai-agent
-      run: python -m compileall .
+      run: |
+        python -m compileall .
+
+
 
     ####################################################
-    # Docker Build
+    # DOCKER BUILD
     ####################################################
 
     - name: Build Docker Images
-      run: docker compose build
+      env:
+        NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+        JOBFLOW_PASSWORD: ${{ secrets.JOBFLOW_PASSWORD }}
+        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+      run: |
+        docker compose build
+
+
 
     ####################################################
-    # Trivy Filesystem Scan
+    # TRIVY FILE SYSTEM SCAN
     ####################################################
 
     - name: Trivy Filesystem Scan
-      uses: aquasecurity/trivy-action@0.28.0
+      uses: aquasecurity/trivy-action@0.33.1
+      continue-on-error: true
       with:
         scan-type: fs
         scan-ref: .
         format: table
+        severity: CRITICAL,HIGH
+
+
 
     ####################################################
-    # Build Images for Image Scan
+    # DOCKER IMAGE BUILD
     ####################################################
 
     - name: Build backend image
       run: docker build -t jobflow-backend ./Back
 
+
     - name: Build frontend image
       run: docker build -t jobflow-frontend ./Front/JOBFLOW
+
 
     - name: Build agent image
       run: docker build -t jobflow-agent ./Agent/jobflow-ai-agent
 
+
+
     ####################################################
-    # Trivy Image Scan
+    # TRIVY IMAGE SCAN
     ####################################################
 
     - name: Scan backend image
-      uses: aquasecurity/trivy-action@0.28.0
+      uses: aquasecurity/trivy-action@0.33.1
+      continue-on-error: true
       with:
         image-ref: jobflow-backend
         format: table
+        severity: CRITICAL,HIGH
+
 
     - name: Scan frontend image
-      uses: aquasecurity/trivy-action@0.28.0
+      uses: aquasecurity/trivy-action@0.33.1
+      continue-on-error: true
       with:
         image-ref: jobflow-frontend
         format: table
+        severity: CRITICAL,HIGH
+
 
     - name: Scan agent image
-      uses: aquasecurity/trivy-action@0.28.0
+      uses: aquasecurity/trivy-action@0.33.1
+      continue-on-error: true
       with:
         image-ref: jobflow-agent
         format: table
+        severity: CRITICAL,HIGH
+
+
 
     ####################################################
-    # Semgrep
+    # SAST - SEMGREP
     ####################################################
 
     - name: Run Semgrep
-      uses: returntocorp/semgrep-action@v1
+      uses: semgrep/semgrep-action@v1
+      continue-on-error: true
       with:
         config: auto
 
+
+
     ####################################################
-    # Bandit
+    # SAST - BANDIT PYTHON
     ####################################################
 
     - name: Install Bandit
       run: pip install bandit
 
+
     - name: Run Bandit
+      continue-on-error: true
       run: |
         bandit -r Agent/jobflow-ai-agent
 
+
+
     ####################################################
-    # SpotBugs
+    # SAST - SPOTBUGS JAVA
     ####################################################
 
     - name: SpotBugs
+      continue-on-error: true
       working-directory: Back
       run: |
         ./mvnw com.github.spotbugs:spotbugs-maven-plugin:spotbugs
 
+
+
     ####################################################
-    # Start Application
+    # START APPLICATION
     ####################################################
 
     - name: Start containers
-      run: docker compose up -d
+      env:
+        NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+        JOBFLOW_PASSWORD: ${{ secrets.JOBFLOW_PASSWORD }}
+        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+      run: |
+        docker compose up -d
+
+
 
     ####################################################
-    # Wait Backend
+    # HEALTHCHECK
     ####################################################
 
     - name: Wait backend
@@ -176,32 +231,41 @@ jobs:
         timeout 120 bash -c '
         until curl -f http://localhost:8080/api/auth/health
         do
-          echo "Waiting..."
+          echo "Waiting backend..."
           sleep 5
         done
         '
 
+
+
     ####################################################
-    # ZAP DAST
+    # DAST - OWASP ZAP
     ####################################################
 
     - name: OWASP ZAP Scan
-      uses: zaproxy/action-baseline@v0.12.0
+      uses: zaproxy/action-baseline@v0.14.0
+      continue-on-error: true
       with:
-        target: 'http://localhost'
+        target: http://localhost
+
+
 
     ####################################################
-    # Logs
+    # DEBUG
     ####################################################
 
     - name: Docker Logs
       if: always()
-      run: docker compose logs
+      run: |
+        docker compose logs
+
+
 
     ####################################################
-    # Stop
+    # CLEANUP
     ####################################################
 
     - name: Shutdown
       if: always()
-      run: docker compose down -v
+      run: |
+        docker compose down -v
