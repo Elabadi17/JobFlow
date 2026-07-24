@@ -222,7 +222,6 @@ jobs:
 
           NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
 
-          JOBFLOW_PASSWORD: ${{ secrets.JOBFLOW_PASSWORD }}
 
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
 
@@ -278,7 +277,7 @@ jobs:
 
         run: |
 
-          docker build -t jobflow-frontend ./Front/JOBFLOW
+          docker build -t jobflow-frontend ./Front/JobFlow
 
 
 
@@ -404,7 +403,6 @@ jobs:
 
           NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
 
-          JOBFLOW_PASSWORD: ${{ secrets.JOBFLOW_PASSWORD }}
 
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
 
