@@ -111,8 +111,7 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
-					<mainClass>JobFlow.JobFlowApplication.java</mainClass>
-					<layout>JAR</layout>
+					<mainClass>JobFlow.JobFlowApplication</mainClass>					<layout>JAR</layout>
 					<excludes>
 						<exclude>
 							<groupId>org.projectlombok</groupId>

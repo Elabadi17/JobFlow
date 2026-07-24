@@ -1,10 +1,84 @@
-version: "3.8"
-
 services:
+
+  postgres:
+
+    image: postgres:16
+
+    container_name: jobflow-postgres
+
+    restart: always
+
+    env_file:
+      - ./env/postgres.env
+
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+
+    ports:
+      - "5432:5432"
+
+
+
+
+  backend:
+
+    build:
+      context: ./Back
+
+
+    container_name: jobflow-backend
+
+
+    restart: always
+
+
+    depends_on:
+
+      - postgres
+
+
+    env_file:
+      - ./env/backend.env
+
+
+    volumes:
+
+      - uploads:/app/uploads
+
+
+    ports:
+
+      - "8080:8080"
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/auth/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+
+
+
   redis:
-    image: redis:7
+
+    image: redis:7-alpine
+
+
+    container_name: jobflow-redis
+
     ports:
       - "127.0.0.1:6379:6379"
+
+    restart: always
+
+
+    volumes:
+
+      - redis_data:/data
+
+
 
   redisinsight:
     image: redis/redisinsight:latest
@@ -12,3 +86,63 @@ services:
       - "5540:5540"
     depends_on:
       - redis
+
+  agent:
+
+
+    build:
+
+      context: ./Agent/jobflow-ai-agent
+
+
+    container_name: jobflow-agent
+
+
+    restart: always
+
+
+
+    depends_on:
+      redis:
+        condition: service_started
+      backend:
+        condition: service_healthy
+
+    env_file:
+
+      - ./env/agent.env
+
+
+
+
+  frontend:
+
+
+    build:
+
+      context: ./Front/JOBFLOW
+
+
+    container_name: jobflow-frontend
+
+
+    restart: always
+
+
+    depends_on:
+
+      - backend
+
+
+    ports:
+
+      - "80:80"
+
+
+volumes:
+
+  postgres_data:
+
+  uploads:
+
+  redis_data:

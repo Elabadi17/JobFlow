@@ -176,26 +176,22 @@ class JobFlowClient:
 
     def send_heartbeat(self):
 
-        while True:
+        try:
 
-            try:
+            response = self.client.post(
+                f"{SPRING_URL}/api/agent/heartbeat"
+            )
 
-                response = self.client.post(
-                    f"{SPRING_URL}/api/agent/heartbeat"
-                )
+            response.raise_for_status()
 
-                response.raise_for_status()
+            print("Agent heartbeat sent")
 
-                print("Agent heartbeat sent")
+        except Exception as e:
 
-            except Exception as e:
-
-                print(
-                    "Heartbeat failed:",
-                    e
-                )
-
-            time.sleep(10)
+            print(
+                "Heartbeat failed:",
+                e
+            )
 
     def start_heartbeat(self):
 
