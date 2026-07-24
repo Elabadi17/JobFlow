@@ -188,56 +188,46 @@ jobs:
 
   security-scan:
 
-
     name: Docker & SAST Security
-
 
     needs:
       - backend-build
       - frontend-build
       - agent-build
 
-
     runs-on: ubuntu-latest
-
 
 
     steps:
 
 
       - name: Checkout
-
         uses: actions/checkout@v4
 
 
+      - name: Create reports directory
+        run: mkdir -p security-reports
 
 
-      ###################################################
-      # Docker build
-      ###################################################
+
+    ###################################################
+    # Docker build
+    ###################################################
 
       - name: Build Docker Compose
 
         env:
-
           NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
-
-
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
 
-
         run: |
-
           docker compose build
 
 
 
-
-
-
-      ###################################################
-      # Trivy filesystem
-      ###################################################
+    ###################################################
+    # Trivy filesystem
+    ###################################################
 
       - name: Trivy filesystem scan
 
@@ -253,22 +243,20 @@ jobs:
 
           format: table
 
+          output: security-reports/trivy-filesystem.txt
+
           severity: CRITICAL,HIGH
 
 
 
 
-
-
-      ###################################################
-      # Build images
-      ###################################################
-
+    ###################################################
+    # Build images
+    ###################################################
 
       - name: Build backend image
 
         run: |
-
           docker build -t jobflow-backend ./Back
 
 
@@ -276,7 +264,6 @@ jobs:
       - name: Build frontend image
 
         run: |
-
           docker build -t jobflow-frontend ./Front/JobFlow
 
 
@@ -284,16 +271,14 @@ jobs:
       - name: Build agent image
 
         run: |
-
           docker build -t jobflow-agent ./Agent/jobflow-ai-agent
 
 
 
 
-
-      ###################################################
-      # Trivy images
-      ###################################################
+    ###################################################
+    # Trivy images
+    ###################################################
 
 
       - name: Scan backend image
@@ -308,7 +293,10 @@ jobs:
 
           format: table
 
+          output: security-reports/trivy-backend.txt
+
           severity: CRITICAL,HIGH
+
 
 
 
@@ -324,7 +312,10 @@ jobs:
 
           format: table
 
+          output: security-reports/trivy-frontend.txt
+
           severity: CRITICAL,HIGH
+
 
 
 
@@ -340,15 +331,16 @@ jobs:
 
           format: table
 
+          output: security-reports/trivy-agent.txt
+
           severity: CRITICAL,HIGH
 
 
 
 
-
-      ###################################################
-      # Semgrep
-      ###################################################
+    ###################################################
+    # Semgrep
+    ###################################################
 
       - name: Semgrep SAST
 
@@ -360,8 +352,42 @@ jobs:
 
           config: auto
 
+          generateSarif: true
 
 
+
+      ###################################################
+      # Save Semgrep result
+      ###################################################
+
+      - name: Move Semgrep report
+
+        if: always()
+
+        run: |
+
+          mv semgrep.sarif security-reports/semgrep.sarif || true
+
+
+
+
+    ###################################################
+    # Upload reports
+    ###################################################
+
+      - name: Upload Security Reports
+
+        if: always()
+
+        uses: actions/upload-artifact@v4
+
+        with:
+
+          name: jobflow-security-reports
+
+          path: security-reports/
+
+          retention-days: 30
 
 
 
@@ -373,36 +399,40 @@ jobs:
 
   dast:
 
-
     name: OWASP ZAP DAST
-
 
     needs:
       - security-scan
 
-
     runs-on: ubuntu-latest
-
 
 
     steps:
 
 
-
       - name: Checkout
-
         uses: actions/checkout@v4
 
 
 
+      - name: Create DAST reports directory
+
+        run: |
+
+          mkdir -p dast-reports
+
+
+
+
+      ###################################################
+      # Start Application
+      ###################################################
 
       - name: Start application
-
 
         env:
 
           NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
-
 
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
 
@@ -413,6 +443,11 @@ jobs:
 
 
 
+
+
+      ###################################################
+      # Wait Backend
+      ###################################################
 
       - name: Wait backend
 
@@ -435,19 +470,55 @@ jobs:
 
 
 
+
+      ###################################################
+      # OWASP ZAP
+      ###################################################
+
       - name: OWASP ZAP Scan
+
 
         uses: zaproxy/action-baseline@v0.14.0
 
+
         continue-on-error: true
+
 
         with:
 
           target: http://localhost
 
+          cmd_options: "-r dast-reports/zap-report.html -w dast-reports/zap-report.md -J dast-reports/zap-report.json"
 
 
 
+
+
+      ###################################################
+      # Upload DAST report
+      ###################################################
+
+      - name: Upload DAST Report
+
+        if: always()
+
+        uses: actions/upload-artifact@v4
+
+        with:
+
+          name: jobflow-dast-report
+
+          path: dast-reports/
+
+          retention-days: 30
+
+
+
+
+
+      ###################################################
+      # Logs
+      ###################################################
 
       - name: Docker logs
 
@@ -455,10 +526,15 @@ jobs:
 
         run: |
 
-          docker compose logs
+          docker compose logs > dast-reports/docker-compose.log
 
 
 
+
+
+      ###################################################
+      # Shutdown
+      ###################################################
 
       - name: Shutdown
 
