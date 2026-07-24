@@ -120,7 +120,7 @@ services:
 
     build:
 
-      context: ./Front/JOBFLOW
+      context: ./Front/JobFlow
 
 
     container_name: jobflow-frontend
