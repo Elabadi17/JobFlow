@@ -1,271 +1,473 @@
 name: JobFlow CI Security Pipeline
 
+
 on:
   push:
     branches:
       - main
       - develop
+
   pull_request:
+
 
 permissions:
   contents: read
   security-events: write
 
 
+
+#########################################################
+# BACKEND
+#########################################################
+
 jobs:
 
-  build:
+  backend-build:
+
+    name: Backend Build & SAST
 
     runs-on: ubuntu-latest
 
+
     steps:
 
-    ####################################################
-    # Checkout
-    ####################################################
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Checkout repository
-      uses: actions/checkout@v4
 
 
-    ####################################################
-    # JAVA BACKEND
-    ####################################################
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
 
-    - name: Setup Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: temurin
-        java-version: 21
-        cache: maven
 
 
-    - name: Build Backend
-      working-directory: Back
-      run: |
-        chmod +x mvnw
-        ./mvnw clean package -DskipTests
+      - name: Build Spring Boot
+        working-directory: Back
+        run: |
+          chmod +x mvnw
+          ./mvnw clean package -DskipTests
 
 
 
-    ####################################################
-    # FRONTEND
-    ####################################################
+      - name: SpotBugs
+        continue-on-error: true
+        working-directory: Back
+        run: |
+          ./mvnw com.github.spotbugs:spotbugs-maven-plugin:spotbugs
 
-    - name: Setup Node
-      uses: actions/setup-node@v4
-      with:
-        node-version: 22
-        cache: npm
-        cache-dependency-path: Front/JOBFLOW/package-lock.json
 
 
-    - name: Build Frontend
-      working-directory: Front/JOBFLOW
-      run: |
-        npm ci
-        npm run build
 
 
 
-    ####################################################
-    # AI AGENT
-    ####################################################
+#########################################################
+# FRONTEND
+#########################################################
 
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.12"
+  frontend-build:
 
 
-    - name: Install Agent dependencies
-      working-directory: Agent/jobflow-ai-agent
-      run: |
-        pip install -r requirements.txt
+    name: Frontend Build
 
 
-    - name: Compile Agent
-      working-directory: Agent/jobflow-ai-agent
-      run: |
-        python -m compileall .
+    runs-on: ubuntu-latest
 
 
 
-    ####################################################
-    # DOCKER BUILD
-    ####################################################
+    steps:
 
-    - name: Build Docker Images
-      env:
-        NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
-        JOBFLOW_PASSWORD: ${{ secrets.JOBFLOW_PASSWORD }}
-        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-      run: |
-        docker compose build
 
+      - name: Checkout
+        uses: actions/checkout@v4
 
 
-    ####################################################
-    # TRIVY FILE SYSTEM SCAN
-    ####################################################
 
-    - name: Trivy Filesystem Scan
-      uses: aquasecurity/trivy-action@0.33.1
-      continue-on-error: true
-      with:
-        scan-type: fs
-        scan-ref: .
-        format: table
-        severity: CRITICAL,HIGH
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: Front/JOBFLOW/package-lock.json
 
 
 
-    ####################################################
-    # DOCKER IMAGE BUILD
-    ####################################################
+      - name: Install dependencies
 
-    - name: Build backend image
-      run: docker build -t jobflow-backend ./Back
+        working-directory: Front/JOBFLOW
 
+        run: |
+          npm ci
 
-    - name: Build frontend image
-      run: docker build -t jobflow-frontend ./Front/JOBFLOW
 
 
-    - name: Build agent image
-      run: docker build -t jobflow-agent ./Agent/jobflow-ai-agent
+      - name: Build React
 
+        working-directory: Front/JOBFLOW
 
+        run: |
+          npm run build
 
-    ####################################################
-    # TRIVY IMAGE SCAN
-    ####################################################
 
-    - name: Scan backend image
-      uses: aquasecurity/trivy-action@0.33.1
-      continue-on-error: true
-      with:
-        image-ref: jobflow-backend
-        format: table
-        severity: CRITICAL,HIGH
 
 
-    - name: Scan frontend image
-      uses: aquasecurity/trivy-action@0.33.1
-      continue-on-error: true
-      with:
-        image-ref: jobflow-frontend
-        format: table
-        severity: CRITICAL,HIGH
 
 
-    - name: Scan agent image
-      uses: aquasecurity/trivy-action@0.33.1
-      continue-on-error: true
-      with:
-        image-ref: jobflow-agent
-        format: table
-        severity: CRITICAL,HIGH
+#########################################################
+# AI AGENT
+#########################################################
 
+  agent-build:
 
 
-    ####################################################
-    # SAST - SEMGREP
-    ####################################################
+    name: AI Agent Build & Security
 
-    - name: Run Semgrep
-      uses: semgrep/semgrep-action@v1
-      continue-on-error: true
-      with:
-        config: auto
 
+    runs-on: ubuntu-latest
 
 
-    ####################################################
-    # SAST - BANDIT PYTHON
-    ####################################################
 
-    - name: Install Bandit
-      run: pip install bandit
+    steps:
 
 
-    - name: Run Bandit
-      continue-on-error: true
-      run: |
-        bandit -r Agent/jobflow-ai-agent
+      - name: Checkout
+        uses: actions/checkout@v4
 
 
 
-    ####################################################
-    # SAST - SPOTBUGS JAVA
-    ####################################################
+      - name: Setup Python
 
-    - name: SpotBugs
-      continue-on-error: true
-      working-directory: Back
-      run: |
-        ./mvnw com.github.spotbugs:spotbugs-maven-plugin:spotbugs
+        uses: actions/setup-python@v5
 
+        with:
+          python-version: "3.12"
 
 
-    ####################################################
-    # START APPLICATION
-    ####################################################
 
-    - name: Start containers
-      env:
-        NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
-        JOBFLOW_PASSWORD: ${{ secrets.JOBFLOW_PASSWORD }}
-        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-      run: |
-        docker compose up -d
+      - name: Install dependencies
 
+        working-directory: Agent/jobflow-ai-agent
 
+        run: |
+          pip install -r requirements.txt
 
-    ####################################################
-    # HEALTHCHECK
-    ####################################################
 
-    - name: Wait backend
-      run: |
-        timeout 120 bash -c '
-        until curl -f http://localhost:8080/api/auth/health
-        do
-          echo "Waiting backend..."
-          sleep 5
-        done
-        '
 
+      - name: Python compile
 
+        working-directory: Agent/jobflow-ai-agent
 
-    ####################################################
-    # DAST - OWASP ZAP
-    ####################################################
+        run: |
+          python -m compileall .
 
-    - name: OWASP ZAP Scan
-      uses: zaproxy/action-baseline@v0.14.0
-      continue-on-error: true
-      with:
-        target: http://localhost
 
 
+      - name: Install Bandit
 
-    ####################################################
-    # DEBUG
-    ####################################################
+        run: |
+          pip install bandit
 
-    - name: Docker Logs
-      if: always()
-      run: |
-        docker compose logs
 
 
+      - name: Bandit SAST
 
-    ####################################################
-    # CLEANUP
-    ####################################################
+        continue-on-error: true
 
-    - name: Shutdown
-      if: always()
-      run: |
-        docker compose down -v
+        run: |
+          bandit -r Agent/jobflow-ai-agent
+
+
+
+
+
+
+#########################################################
+# SECURITY SCAN
+#########################################################
+
+  security-scan:
+
+
+    name: Docker & SAST Security
+
+
+    needs:
+      - backend-build
+      - frontend-build
+      - agent-build
+
+
+    runs-on: ubuntu-latest
+
+
+
+    steps:
+
+
+      - name: Checkout
+
+        uses: actions/checkout@v4
+
+
+
+
+      ###################################################
+      # Docker build
+      ###################################################
+
+      - name: Build Docker Compose
+
+        env:
+
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+
+          JOBFLOW_PASSWORD: ${{ secrets.JOBFLOW_PASSWORD }}
+
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+
+
+        run: |
+
+          docker compose build
+
+
+
+
+
+
+      ###################################################
+      # Trivy filesystem
+      ###################################################
+
+      - name: Trivy filesystem scan
+
+        uses: aquasecurity/trivy-action@master
+
+        continue-on-error: true
+
+        with:
+
+          scan-type: fs
+
+          scan-ref: .
+
+          format: table
+
+          severity: CRITICAL,HIGH
+
+
+
+
+
+
+      ###################################################
+      # Build images
+      ###################################################
+
+
+      - name: Build backend image
+
+        run: |
+
+          docker build -t jobflow-backend ./Back
+
+
+
+      - name: Build frontend image
+
+        run: |
+
+          docker build -t jobflow-frontend ./Front/JOBFLOW
+
+
+
+      - name: Build agent image
+
+        run: |
+
+          docker build -t jobflow-agent ./Agent/jobflow-ai-agent
+
+
+
+
+
+      ###################################################
+      # Trivy images
+      ###################################################
+
+
+      - name: Scan backend image
+
+        uses: aquasecurity/trivy-action@master
+
+        continue-on-error: true
+
+        with:
+
+          image-ref: jobflow-backend
+
+          format: table
+
+          severity: CRITICAL,HIGH
+
+
+
+      - name: Scan frontend image
+
+        uses: aquasecurity/trivy-action@master
+
+        continue-on-error: true
+
+        with:
+
+          image-ref: jobflow-frontend
+
+          format: table
+
+          severity: CRITICAL,HIGH
+
+
+
+      - name: Scan agent image
+
+        uses: aquasecurity/trivy-action@master
+
+        continue-on-error: true
+
+        with:
+
+          image-ref: jobflow-agent
+
+          format: table
+
+          severity: CRITICAL,HIGH
+
+
+
+
+
+      ###################################################
+      # Semgrep
+      ###################################################
+
+      - name: Semgrep SAST
+
+        uses: semgrep/semgrep-action@v1
+
+        continue-on-error: true
+
+        with:
+
+          config: auto
+
+
+
+
+
+
+
+
+#########################################################
+# DAST
+#########################################################
+
+  dast:
+
+
+    name: OWASP ZAP DAST
+
+
+    needs:
+      - security-scan
+
+
+    runs-on: ubuntu-latest
+
+
+
+    steps:
+
+
+
+      - name: Checkout
+
+        uses: actions/checkout@v4
+
+
+
+
+      - name: Start application
+
+
+        env:
+
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+
+          JOBFLOW_PASSWORD: ${{ secrets.JOBFLOW_PASSWORD }}
+
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+
+
+        run: |
+
+          docker compose up -d
+
+
+
+
+      - name: Wait backend
+
+        run: |
+
+          timeout 120 bash -c '
+
+          until curl -f http://localhost:8080/api/auth/health
+
+          do
+
+            echo "Waiting backend..."
+
+            sleep 5
+
+          done
+
+          '
+
+
+
+
+      - name: OWASP ZAP Scan
+
+        uses: zaproxy/action-baseline@v0.14.0
+
+        continue-on-error: true
+
+        with:
+
+          target: http://localhost
+
+
+
+
+
+      - name: Docker logs
+
+        if: always()
+
+        run: |
+
+          docker compose logs
+
+
+
+
+      - name: Shutdown
+
+        if: always()
+
+        run: |
+
+          docker compose down -v
