@@ -36,7 +36,8 @@ class LLMService:
         response = requests.post(
             NVIDIA_URL,
             json=payload,
-            headers=headers
+            headers=headers,
+            timeout=30
         )
 
         response.raise_for_status()
